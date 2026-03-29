@@ -78,7 +78,7 @@ func FireFoxPath() string {
 			log.Fatalf("There was an error reading the profiles for FireFox:%v\n", err)
 		}
 		default_profile := cfg.Section("Profile0").Key("Path").String()
-		default_path := filepath.Join(user.HomeDir, ".config/mozilla/firefox/", default_profile, "sessionstore-backups/recovery.jsonlz4")
+		default_path := filepath.Join(user.HomeDir, "snap/firefox/common/.mozilla/firefox/", default_profile, "sessionstore-backups/recovery.jsonlz4")
 		return default_path
 	default:
 		return "No SystemD OS detected."
@@ -133,6 +133,6 @@ func GetDistro() string {
 		log.Fatalf("There was an error with executing cat /etc/os-release.\n%v", err)
 	}
 	var os_release string = string(output_0)
-	regex, _ := regexp.Compile("NAME=\"(.*?)\"")
+	regex, _ := regexp.Compile("^NAME=\"(.*?)\"")
 	return regex.FindString(string(os_release))
 }
