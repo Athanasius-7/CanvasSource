@@ -3,7 +3,7 @@
 ```bash
 git clone https://github.com/Athanasius-7/CanvasSource
 cd CanvasSource
-CGO_ENABLED=1 go build -o CC *.go
+CGO_ENABLED=1 go build -o ../bin/x86_64CC *.go
 ```
 
 # Bin
