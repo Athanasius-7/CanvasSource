@@ -8,14 +8,15 @@ the user's canvas data, primarily through API calls.
 package main
 
 import (
-	jsonv2 "encoding/json/v2"
 	"fmt"
+	"github.com/bytedance/sonic"
 	"io"
 	"log"
 	"net/http"
 	"reflect"
 	"strings"
 	"sync"
+	"github.com/schollz/progressbar/v3"
 	"time"
 )
 
@@ -84,9 +85,7 @@ func GetRequest(cookie *http.Cookie, method string, url string) (*http.Request, 
 
 func GetUser() User {
 	var url string = "https://learn.canvas.net/api/v1/users/self"
-	// make request.
 	resp, err := http.Get(url)
-	// check if we had an error.
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -95,7 +94,7 @@ func GetUser() User {
 		log.Fatalln(err)
 	}
 	var user User
-	jsonv2.Unmarshal([]byte(string(text_body)), &user)
+	sonic.Unmarshal([]byte(string(text_body)), &user)
 	return user
 }
 
@@ -121,27 +120,29 @@ func GetCourses(courses *[]Course, cookie *http.Cookie) error {
 		log.Fatalln(err)
 	}
 	var buffer []Course
-	begin := time.Now()
-	err = jsonv2.Unmarshal([]byte(string(text_body)), &buffer)
-	fmt.Printf("Time to unmarshal JSON into []buffer.%v\n", time.Since(begin))
+	err = sonic.Unmarshal([]byte(string(text_body)), &buffer)
+	/* 	err = sonic.ConfigDefault.NewDecoder(resp.Body).Decode(&buffer) */
 	if err != nil {
 		log.Fatalln(err)
 	}
 	var wg sync.WaitGroup
-	begin = time.Now()
 	// check whether a specific course is restricted, if not,
 	// then do not add to our final course list.
+	// TODO: Add filter for only current term courses.
 	for i := 0; i < len(buffer); i++ {
 		if !buffer[i].Restricted {
 			*courses = append(*courses, buffer[i])
 		}
 	}
+	// add a fixed of groups to wg.
+	wg.Add(len(*courses))
+	bar := progressbar.Default(int64(len((*courses))))
 	for i := 0; i < len(*courses); i++ {
-		wg.Add(1)
 		go GetCourseAssignments((&(*courses)[i]), &((*courses)[i].Assignments), cookie, &wg)
+		bar.Add(1)
+		time.Sleep(10 * time.Millisecond)
 	}
 	wg.Wait()
-	fmt.Printf("Time to unmarshal all asssignments into []courses.%v\n", time.Since(begin))
 	return err
 }
 
@@ -168,10 +169,11 @@ func GetCourseAssignments(course *Course, assignments *[]Assignment, cookie *htt
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = jsonv2.Unmarshal([]byte(string(text_body)), &assignments)
+	err = sonic.Unmarshal([]byte(string(text_body)), &assignments)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	// err = sonic.ConfigDefault.NewDecoder(resp.Body).Decode(assignments)
 	return nil
 }
 

@@ -8,10 +8,10 @@ system info checking.
 package main
 
 import (
-	jsonv2 "encoding/json/v2"
 	"errors"
-	_ "fmt"
+	"github.com/bytedance/sonic"
 	"github.com/giulianopz/go-dejsonlz4/jsonlz4"
+	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/ini.v1"
 	"log"
 	"os"
@@ -106,7 +106,7 @@ func SessionCookies(path string) (*Cookies, error) {
 		return nil, err
 	}
 	var kookies Cookies
-	err = jsonv2.Unmarshal(content, &kookies)
+	err = sonic.Unmarshal(content, &kookies)
 	if err != nil {
 		log.Fatalln("Error: File was not unmarshaled properly.")
 		return nil, err

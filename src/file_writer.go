@@ -24,8 +24,7 @@ exists or not.
 ────────────────────────────────────────
 */
 func make_dir(path string) error {
-	newpath := filepath.Join(".", path)
-	err := os.MkdirAll(newpath, os.ModePerm)
+	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
 		log.Fatalf("There was error with creating the directories: %v", err)
 	}
@@ -62,7 +61,6 @@ func make_todo(courses *[]Course, path string) error {
 		}
 	}
 	defer file.Close()
-	log.Printf("Successfully created and wrote to path: %v\n", file)
 	// After generating all the text, write the file from the buffer
 	_, err = file.WriteString(buffer.String())
 	// Check if there was an error writing to the file.
@@ -86,7 +84,7 @@ func assign_to_md(assignment *Assignment, path string) error {
 	// passed in.
 	var file_title string = fmt.Sprintf("%s.md", (*assignment).Title)
 	file_title = strings.Replace(file_title, "/", "_", -1)
-	newPath := filepath.Join(".", path, file_title)
+	newPath := filepath.Join(path, file_title)
 	file, err := os.Create(newPath)
 	// Check for errors.
 	if err != nil {
@@ -124,7 +122,7 @@ func init_courses(courses *[]Course, path string) {
 	for i := 0; i < len(*courses); i++ {
 		err := make_dir(fmt.Sprintf("%s/%s", path, (*courses)[i].Name))
 		if err != nil {
-			return
+			log.Fatalf("There was an error with creating a directory for the following course: %s\n", (*courses)[i].Name)
 		}
 		for j := 0; j < len((*courses)[i].Assignments); j++ {
 			assign_to_md(&(((*courses)[i]).Assignments[j]), filepath.Join(path, (*courses)[i].Name))

@@ -5,35 +5,60 @@ Canvas Source Main
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	_"github.com/mattn/go-sqlite3"
-	"time"
 	"log"
+	"os"
+	"os/user"
+	"path/filepath"
+	// "runtime/trace"
+	"time"
 )
 
 func main() {
-	fmt.Printf("The user's OS and Linux Distro is: %s\n", GetDistro())
+	// Temp Code for Future Traces.
+	/* file, err := os.Create("trace.out")
+	if err != nil {
+		log.Fatalf("There was an error with creating the trace.out file: %v\n", err)
+	}
+	defer file.Close()
+	err = trace.Start(file)
+	if err != nil {
+		log.Fatalf("There was an error with starting the trace: %v\n", err)
+	}
+	defer trace.Stop() */
+	db, err := initDB("./cache.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	if err = initSchema(db); err != nil {
+		log.Fatalf("There was an error with initSchema.%v\n", err)
+	}
+	user, _ := user.Current()
+	homeDir := user.HomeDir
+	assign_path := filepath.Join(homeDir, "assignments")
+	err = os.MkdirAll(assign_path, os.ModePerm)
+	if err != nil {
+		log.Fatalf("There was an error with creating  the assignments path.%v\n", err)
+	}
+	initCache(db)
+	cache := &Cache{}
+	err = GetCache(cache, db, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
 	begin := time.Now()
 	cookie := GetSessionCookie()
 	var courses []Course
-	err := GetCourses(&courses, cookie)
+	err = GetCourses(&courses, cookie)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	make_todo(&courses, "assignments/Assignment_List.md")
-	fmt.Printf("The time it took to create courses and make the todo list was: %v\n", time.Since(begin))
-	init_courses(&courses, "assignments")
-	fmt.Printf("The time it took to create all assignments was %v:\n", time.Since(begin))
+	todo_path := filepath.Join(assign_path, "TODO.md")
+	make_todo(&courses, todo_path)
+	// fmt.Printf("The time it took to create courses and make the todo list was: %v\n", time.Since(begin))
+	init_courses(&courses, assign_path)
+	fmt.Printf("The entire program took: %v\n", time.Since(begin))
 	// Sqlite3 Code
-	db, err := sql.Open("sqlite3", "./cache.db")
-	if err != nil {
-		log.Fatalf("There was an error with open the database.\n%v", err)
-	}
-	defer db.Close()
-	if err := db.Ping(); err != nil {
-		log.Fatalf("There was an error ping the database.\n%v", err)
-	}
-	fmt.Printf("Successfully pinged the database.\n")
 	return
 }
