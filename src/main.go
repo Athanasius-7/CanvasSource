@@ -34,18 +34,18 @@ func main() {
 	if err = initSchema(db); err != nil {
 		log.Fatalf("There was an error with initSchema.%v\n", err)
 	}
-	user, _ := user.Current()
-	homeDir := user.HomeDir
-	assign_path := filepath.Join(homeDir, "assignments")
-	err = os.MkdirAll(assign_path, os.ModePerm)
-	if err != nil {
-		log.Fatalf("There was an error with creating  the assignments path.%v\n", err)
-	}
 	initCache(db)
 	cache := &Cache{}
 	err = GetCache(cache, db, 1)
 	if err != nil {
 		log.Fatal(err)
+	}
+	user, _ := user.Current()
+	homeDir := user.HomeDir
+	folder_path := filepath.Join(homeDir, "assignments")
+	err = os.MkdirAll(folder_path, os.ModePerm)
+	if err != nil {
+		log.Fatalf("There was an error with creating  the assignments path.%v\n", err)
 	}
 	begin := time.Now()
 	cookie := GetSessionCookie()
@@ -54,10 +54,10 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	todo_path := filepath.Join(assign_path, "TODO.md")
+	todo_path := filepath.Join(folder_path, "TODO.md")
 	make_todo(&courses, todo_path)
 	// fmt.Printf("The time it took to create courses and make the todo list was: %v\n", time.Since(begin))
-	init_courses(&courses, assign_path)
+	init_courses(&courses, folder_path)
 	fmt.Printf("The entire program took: %v\n", time.Since(begin))
 	// Sqlite3 Code
 	return

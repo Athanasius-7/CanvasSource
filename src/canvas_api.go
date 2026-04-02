@@ -10,13 +10,13 @@ package main
 import (
 	"fmt"
 	"github.com/bytedance/sonic"
+	"github.com/schollz/progressbar/v3"
 	"io"
 	"log"
 	"net/http"
 	"reflect"
 	"strings"
 	"sync"
-	"github.com/schollz/progressbar/v3"
 	"time"
 )
 

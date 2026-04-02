@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"net/http"
 	"os/user"
 	"path/filepath"
 	"runtime"
@@ -22,8 +23,7 @@ const schema = `CREATE TABLE IF NOT EXISTS cache (
 // cache for general app.
 type Cache struct {
 	id           int
-	cookie_value string
-	cookie_name  string
+	cookie       http.Cookie
 	browser_path string
 	os           string
 	linux_distro string
@@ -71,7 +71,7 @@ func initCache(db *sql.DB) error {
 func GetCache(cache *Cache, db *sql.DB, id int) error {
 	var query string = "SELECT * from cache where id = ?"
 	row := db.QueryRow(query, id)
-	err := row.Scan(&cache.id, &cache.cookie_value, &cache.cookie_name, &cache.browser_path, &cache.os, &cache.linux_distro, &cache.folder_path)
+	err := row.Scan(&cache.id, &cache.cookie.Name, &cache.cookie.Value, &cache.browser_path, &cache.os, &cache.linux_distro, &cache.folder_path)
 	if err != nil {
 		return err
 	}

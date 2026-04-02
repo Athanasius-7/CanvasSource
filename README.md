@@ -3,7 +3,7 @@
 ```bash
 git clone https://github.com/Athanasius-7/CanvasSource
 cd CanvasSource
-CGO_ENABLED=1 GOEXPERIMENT=jsonv2 go build -o CC *.go
+CGO_ENABLED=1 go build -o CC *.go
 ```
 
 # Bin
@@ -15,3 +15,5 @@ CGO_ENABLED=1 GOEXPERIMENT=jsonv2 go build -o CC *.go
 - Go Compiler
 - Active Canvas Session
 
+## Updates:
+- Changed JSON unmarshal lib to bytedance/sonic.
