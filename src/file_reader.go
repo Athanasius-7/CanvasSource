@@ -102,13 +102,11 @@ func SessionCookies(path string) (*Cookies, error) {
 	session_lz4, _ := os.ReadFile(path)
 	content, err := jsonlz4.Uncompress(session_lz4)
 	if err != nil {
-		log.Fatalln("Error: File was not decoded properly.")
 		return nil, err
 	}
 	var kookies Cookies
 	err = sonic.Unmarshal(content, &kookies)
 	if err != nil {
-		log.Fatalln("Error: File was not unmarshaled properly.")
 		return nil, err
 	}
 	return &kookies, err
@@ -116,10 +114,7 @@ func SessionCookies(path string) (*Cookies, error) {
 
 /*
 ────────────────────────────────────────
-Function returns the user's linux distro.
-Parses hostnamectl cli response and maps
-it onto a map of [string]string that then
-returns the Operating System response value.
+Run cat on the user's os-release then regex the name of distro.
 ────────────────────────────────────────
 */
 // TODO: Use cat /etc/os-release for cli command, then parse the output
