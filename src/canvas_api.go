@@ -20,6 +20,12 @@ import (
 	"time"
 )
 
+type FunctionStatus int 
+const (
+	SUCCESS = iota
+	UPDATEREQ
+	UNSUCCESS
+)
 /*
 ────────────────────────────────────────
 Struct Defintions for Canvas Types
@@ -57,7 +63,7 @@ func GetSessionCookie() *http.Cookie {
 	var session_path string = FireFoxPath()
 	kookies, err := SessionCookies(session_path)
 	if err != nil {
-		log.Fatalln("GetSessionCookie() --> Did not recieve correct value.")
+		log.Fatal("GetSessionCookie() --> Did not recieve correct value.")
 		return nil
 	}
 	var target Cookie
@@ -87,43 +93,59 @@ func GetUser() User {
 	var url string = "https://learn.canvas.net/api/v1/users/self"
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	text_body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	var user User
 	sonic.Unmarshal([]byte(string(text_body)), &user)
 	return user
 }
 
-func GetCourses(courses *[]Course, cookie *http.Cookie) error {
+func GetCourses(courses *[]Course, cookie *http.Cookie) (int, error) {
 	var url string = fmt.Sprintf("https://mpc.instructure.com/api/v1/courses/?per_page=100")
 	req, err := GetRequest(cookie, "GET", url)
 	if err != nil {
-		log.Fatalln(err)
+		return UNSUCCESS, err
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalln(err)
+		return UNSUCCESS, err
 	}
 	defer resp.Body.Close()
-	if err != nil || resp.StatusCode != 200 {
-		fmt.Printf("Error in retrieving the courses.\n")
-		log.Fatalf("The canvas session may be inactive within your browser. Make sure you are logged into your school's canvas domain: ERR: %v\n", err)
-		return nil
+	var status int = SUCCESS
+	// The cookie passed in is most likely expired -> Update
+	if resp.StatusCode != 200 {
+		log.Print("Updating Cookie.\n")
+		cookie = GetSessionCookie()
+		req, err := GetRequest(cookie, "GET", url)
+		if err != nil {
+			return UNSUCCESS, err
+		}
+		resp, err = client.Do(req)
+		if err != nil {
+			return UNSUCCESS, err
+			}
+		// User's session is not active, therefore kill program
+		if resp.StatusCode != 200 {
+			log.Fatal("Ensure your canvas session is active.\n")
+			return UNSUCCESS, nil
+		}
+		// Update flag -> Update Cache in main
+		status = UPDATEREQ
 	}
+	defer resp.Body.Close()
 	text_body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalln(err)
+		return UNSUCCESS, err
 	}
 	var buffer []Course
 	err = sonic.Unmarshal([]byte(string(text_body)), &buffer)
-	/* 	err = sonic.ConfigDefault.NewDecoder(resp.Body).Decode(&buffer) */
 	if err != nil {
-		log.Fatalln(err)
+		return UNSUCCESS, err
 	}
 	var wg sync.WaitGroup
 	// check whether a specific course is restricted, if not,
@@ -143,7 +165,7 @@ func GetCourses(courses *[]Course, cookie *http.Cookie) error {
 		time.Sleep(10 * time.Millisecond)
 	}
 	wg.Wait()
-	return err
+	return status, nil
 }
 
 /*
@@ -157,23 +179,42 @@ func GetCourseAssignments(course *Course, assignments *[]Assignment, cookie *htt
 	defer wg.Done()
 	var url string = fmt.Sprintf("https://mpc.instructure.com/api/v1/courses/%d/assignments", course.Course_ID)
 	req, err := GetRequest(cookie, "GET", url)
+	if err != nil {
+		return err
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	if err != nil || resp.StatusCode != 200 {
-		fmt.Printf("Error in retrieving assignments for [course_id: %d]\tStatus Code:%d\n", course.Course_ID, resp.StatusCode)
-		log.Fatalf("The canvas session may be inactive within your browser. Make sure you are logged into your school's canvas domain: ERR: %v\n", err)
-		return nil
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	// The cookie passed in is most likely expired -> Update
+	if resp.StatusCode != 200 {
+		log.Print("Updating Cookie.\n")
+		cookie = GetSessionCookie()
+		req, err := GetRequest(cookie, "GET", url)
+		if err != nil {
+			return err
+		}
+		resp, err = client.Do(req)
+		if err != nil {
+			return err
+			}
+		// User's session is not active, therefore kill program
+		if resp.StatusCode != 200 {
+			log.Fatal("Ensure your canvas session is active.\n")
+			return nil
+		}
 	}
 	text_body, err := io.ReadAll(resp.Body)
 	// check if we had an error.
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
-	err = sonic.Unmarshal([]byte(string(text_body)), &assignments)
+	err = sonic.Unmarshal(text_body, &assignments)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
-	// err = sonic.ConfigDefault.NewDecoder(resp.Body).Decode(assignments)
 	return nil
 }
 

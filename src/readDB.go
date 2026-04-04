@@ -62,6 +62,7 @@ func initCache(db *sql.DB) error {
 	user, _ := user.Current()
 	homeDir := user.HomeDir
 	folder_path := filepath.Join(homeDir, "assignments")
+	// TODO: currently always inserting into DB instead of simply reading and writing to id 1 -> Fix.
 	_, err := db.Exec("INSERT into cache(cookie_name, cookie_value, browser_path, os, linux_distro, folder_path) VALUES(?, ?, ?, ?, ?, ?)", cookie_name, cookie_val, browser_path, runtime.GOOS, linux_distro, folder_path)
 	if err != nil {
 		return err
